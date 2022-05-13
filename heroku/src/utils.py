@@ -1,11 +1,45 @@
-import os
+import json
+
+from config import SRC, REMOTE, BOT
 from pathlib import Path
 
 
-def is_local_host() -> bool:
-    """Register the current environment"""
+def update_database(database: str, obj) -> None:
+    """Serializes the defined JSON data file"""
 
-    if Path(".\\env.py").is_file():
-        import env
+    Path(f"{SRC}/data/{database}.jsonc").write_text(json.dumps(obj, indent=4))
 
-        env.reg_environ()
+
+def load_database(database: str):
+    """Deserializes the defined JSON data file and returns the object"""
+
+    return json.loads(Path(f"{SRC}/data/{database}.jsonc").read_text())
+
+
+def load_cogs():
+    """Loads every file in the defined folder"""
+
+    for file in Path(f"{SRC}/src/cogs").glob("**/*.py"):
+
+        if file.is_file() and "_view.py" not in file.name:
+            # format name
+            if REMOTE:
+                name = (
+                    file.as_posix()
+                    .replace(".py", "")
+                    .replace("/app/src/cogs/", "")
+                    .replace("/", ".")
+                )
+            else:
+                name = (
+                    file.as_posix()
+                    .replace(".py", "")
+                    .replace("/", ".")
+                    .replace("src.cogs.", "")
+                )
+
+            # load cog
+            BOT.load_extension(f"cogs.{name}")
+
+            # log success
+            print(f"Loaded: cogs.{name}")
